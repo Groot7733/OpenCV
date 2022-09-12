@@ -1,0 +1,215 @@
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/objdetect.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+
+
+//1.import
+
+//picture
+string path = "Resources/test.png"; //import path
+Mat img = imread(path); //import image;Mat 矩阵数据类型
+
+VideoCapture cap(0);
+while (true)
+{
+	cap.read(img);
+	imshow("Image", image);
+	waitKey(1);
+}
+
+//video
+string path = "Resources/test_video.mp4";
+VideoCapture cap(path);
+Mat img;
+
+while (true) {
+
+	cap.read(img);
+
+	imshow("Image", img);
+	waitKey(1);//1msdelay
+
+
+}
+
+
+//2.preprocessing
+Mat preProcessing(Mat img)
+{
+	Mat imgGray, imgBlur, imgCanny, imgDil, imgErode;
+
+	cvtColor(img, imgGray, COLOR_BGR2GRAY);
+	GaussianBlur(img, imgBlur, Size(7, 7), 5, 0);
+	Canny(imgBlur, imgCanny, 25, 70);
+
+	Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+	dilate(imgCanny, imgDil, kernel);//膨胀
+	erode(imgDil, imgErode, kernel);//腐蚀
+
+}
+
+
+// 3.Draw Shapes and Text
+Mat img(512, 512, CV_8UC3, Scalar(255, 0, 0));
+
+circle(img, Point(256, 256), 155, Scalar(0, 69, 255), FILLED);
+rectangle(img, Point(130, 226), Point(382, 286), Scalar(255, 255, 255), 10);//左上和右下的点
+line(img, Point(130, 296), Point(382, 296), Scalar(255, 255, 255), 2);
+
+putText(img, "Murtaza's Workshop", Point(137, 262), FONT_HERSHEY_COMPLEX, 2, Scalar(255, 5, 234), 2);
+
+
+
+//4.image wrap
+
+float w = 250, h = 350;
+Mat matrix, imgWarp;
+
+Point2f src[4] = { {529,142},{771,190},{405,395},{674,457} };//before,自定义（找到需要处理点的像素点）
+Point2f dst[4] = { {0.0f,0.0f},{w,0.0f},{0.0f,h},{w,h} };//after,w,h为宽和高
+
+matrix = getPerspectiveTransform(src, dst);//获取透视变换矩阵
+warpPerspective(img, imgWarp, matrix, Point(w, h));//透视变换
+
+//标出形变前的四个端点
+for (int i = 0; i < 4; i++)
+{
+	circle(img, src[i], 10, Scalar(0, 0, 255), FILLED);
+}
+
+
+
+//5. Color Detection
+
+Mat imgHSV, mask;
+
+//how to find these values?
+//creat track bars,can chance the value in real time,find the min and the max
+int hmin = 0, smin = 110, vmin = 153;
+int hmax = 19, smax = 240, vmax = 255;
+
+void main() {
+	string path = "Resources/lambo.png";
+	Mat img = imread(path);
+
+	cvtColor(img, imgHSV, COLOR_BGR2HSV);//色彩转换
+
+	//colorPicker
+	namedWindow("Trackbars", (640, 200));
+	createTrackbar("Hue Min", "Trackbars", &hmin, 179);
+	createTrackbar("Hue Max", "Trackbars", &hmax, 179);
+	createTrackbar("Sat Min", "Trackbars", &smin, 255);
+	createTrackbar("Sat Max", "Trackbars", &smax, 255);
+	createTrackbar("Val Min", "Trackbars", &vmin, 255);
+	createTrackbar("Val Max", "Trackbars", &vmax, 255);
+
+	while (true) {
+
+
+		Scalar lower(hmin, smin, vmin); //色相最小值
+		Scalar upper(hmax, smax, vmax); //scalar定义颜色数组
+		inRange(imgHSV, lower, upper, mask); //收集颜色
+
+
+
+		imshow("Image", img);
+		imshow("Image HSV", imgHSV);
+		imshow("Image Mask", mask);
+		waitKey(1);
+
+	}
+
+
+	//6.getContours
+
+	Mat imgGray, imgBlur, imgCanny, imgDil;
+
+	void getContours(Mat imgDil, Mat img) {
+
+		//find contours in imgDil,draw on img
+
+		//define contours,hierarchy
+		vector<vector<Point>> contours;
+		//hierarchy:vector but all 4 int (opencv)
+		vector<Vec4i> hierarchy;
+
+
+		findContours(imgDil, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+		//drawContours(img, contours, -1, Scalar(255, 0, 255), 2);
+
+
+	//filter out other shapes
+		for (int i = 0; i < contours.size(); i++)
+		{
+			int area = contourArea(contours[i]);
+			cout << area << endl;
+
+			vector<vector<Point>> conPoly(contours.size());
+			vector<Rect> boundRect(contours.size());
+			string objectType;
+
+			if (area > 1000)
+			{
+				float peri = arcLength(contours[i], true); //计算轮廓周长
+				approxPolyDP(contours[i], conPoly[i], 0.02 * peri, true);//多边拟合函数
+				drawContours(img, contours, i, Scalar(255, 0, 255), 2);
+				cout << conPoly[i].size() << endl;
+
+				boundRect[i] = boundingRect(conPoly[i]); //计算轮廓的垂直边界最小矩形，矩形是与图像上下边界平行的
+
+				int objCor = (int)conPoly[i].size();
+
+				if (objCor == 3) { objectType = "Tri"; }
+				if (objCor == 4) {
+
+
+					float aspRatio = (float)(boundRect[i].width) / (float)(boundRect[i].height);
+					//结果显示四边形长和宽都是0？
+					//没有先定义boundRect
+
+					cout << aspRatio << endl;
+					if (aspRatio > 0.95 && aspRatio < 1.05) { objectType = "Square"; }
+					else {
+						objectType = "Rect";
+					}
+
+				}
+				if (objCor > 4) { objectType = "Circle"; }
+
+				rectangle(img, boundRect[i].tl(), boundRect[i].br(), Scalar(0, 255, 0), 5); //绘制矩形框
+				putText(img, objectType, { boundRect[i].x,boundRect[i].y - 5 }, FONT_HERSHEY_PLAIN, 1, Scalar(0, 69, 255), 1);
+
+
+			}
+
+		}
+
+	}
+
+	//7.reorder排序函数
+	vector<Point> reroder(vector<Point> points)
+	{
+		vector<Point> newPoints;
+		vector<int> sumPoints, subPoints;
+		//{68, 235, 750, 350};
+
+
+		for (int i = 0; i < 4; i++)
+		{
+			sumPoints.push_back(points[i].x + points[i].y);
+			subPoints.push_back(points[i].x - points[i].y);
+		}
+
+		newPoints.push_back(points[min_element(sumPoints.begin(), sumPoints.end()) - sumPoints.begin()]);//0
+		newPoints.push_back(points[max_element(subPoints.begin(), subPoints.end()) - subPoints.begin()]);//0
+		newPoints.push_back(points[min_element(subPoints.begin(), subPoints.end()) - subPoints.begin()]);//0
+		newPoints.push_back(points[max_element(sumPoints.begin(), sumPoints.end()) - sumPoints.begin()]);//3
+
+		return newPoints;
+	}
