@@ -125,7 +125,6 @@ void main() {
 
 	}
 
-
 	//6.getContours
 
 	Mat imgGray, imgBlur, imgCanny, imgDil;
@@ -213,3 +212,35 @@ void main() {
 
 		return newPoints;
 	}
+	
+	
+	
+	
+	//8.计时函数
+void PrintMs(const char* text = "")
+{
+	static long long last = 0;
+	long long cur = getTickCount();
+	if (last == 0)
+	{
+		last = cur;
+		return;
+	}
+	long long ms = 0;
+	ms = ((double)(cur - last) / getTickFrequency()) * 1000;
+	if (*text != 0)
+	{
+		printf("%s=%dms\n", text, ms);
+	}
+
+	last = getCPUTickCount();
+
+}
+
+
+ PrintMs();
+ int main(){}
+ 
+ Prints("...");
+
+
