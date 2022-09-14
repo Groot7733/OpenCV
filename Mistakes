@@ -1,1 +1,8 @@
+//bug:
+1.create函数名写错;
+2.elemSize()必须指定是mat.elemSize();
+3.for循环里边必须先定义int i
+4.找不到标识符:函数名错误
+5.the baseOutpath property is not set for project.please make sure have a valid combinationof configuration and platform for the project:
+
 
