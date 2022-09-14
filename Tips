@@ -1,0 +1,5 @@
+1.char **argv 与char *argv[]的区别
+char **argv
+argv是一个指针变量，argv的指向（*argv）是char *，也就是argv指向的也是一个指针 ；*argv的指向（**argv）是char。
+char *argv[]
+首先argv是一个数组，数组里面的元素是指针变量（char *），数组里元素指向的是char。
