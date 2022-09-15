@@ -233,7 +233,7 @@ void PrintMs(const char* text = "")
 		printf("%s=%dms\n", text, ms);
 	}
 
-	last = getCPUTickCount();
+	last = getTickCount();
 
 }
 
