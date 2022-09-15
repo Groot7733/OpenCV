@@ -5,4 +5,7 @@
 4.找不到标识符:函数名错误
 5.the baseOutpath property is not set for project.please make sure have a valid combinationof configuration and platform for the project:
 
+//Question：
+1.法二，三遍历的时间应该差不多，为什么运行是会差很多？法三中包含定义矩阵的时间,用release测试
+2.release出错:属性，链接器配置中需要添加opencv_world454.lib
 
